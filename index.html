@@ -179,6 +179,12 @@
   .atc-track{ font-size:.95rem; color:var(--ink); margin-top:.3rem; letter-spacing:.03em; }
   .atc-target{ color:var(--gold-light); font-weight:bold; font-size:1.15rem; }
 
+  .last-throws{ display:flex; gap:.25rem; margin-top:.35rem; flex-wrap:wrap; }
+  .mini-dart{
+    font-size:.68rem; color:var(--ink-dim); background:var(--bg-panel-strong); border:1px solid var(--border);
+    border-radius:5px; padding:.05rem .3rem;
+  }
+
   .turn-strip{ display:flex; align-items:center; justify-content:center; gap:.6rem; margin-bottom:.5rem; flex:none; }
   .dart-slot{
     width:3.4rem; height:2rem; border-radius:8px; border:1px dashed var(--border);
@@ -602,7 +608,8 @@
       return {
         name: name,
         color: COLORS[i % COLORS.length],
-        eliminated: false
+        eliminated: false,
+        lastThrows: []
       };
     });
 
@@ -862,6 +869,9 @@
   }
 
   function advanceTurn(){
+    if(state.currentTurnThrows.length > 0){
+      activePlayer().lastThrows = state.currentTurnThrows.slice();
+    }
     state.currentTurnThrows = [];
     var n = state.players.length;
     var tries = 0;
@@ -998,7 +1008,14 @@
         body = '<div class="pscore num">N°' + p.number + '</div><div class="lives">' + dots + '</div>';
       }
 
-      card.innerHTML = nameRow + body;
+      var lastThrowsRow = "";
+      if(p.lastThrows && p.lastThrows.length > 0){
+        lastThrowsRow = '<div class="last-throws">' + p.lastThrows.map(function(t){
+          return '<span class="mini-dart">' + t + '</span>';
+        }).join("") + '</div>';
+      }
+
+      card.innerHTML = nameRow + body + lastThrowsRow;
       sb.appendChild(card);
     });
 
