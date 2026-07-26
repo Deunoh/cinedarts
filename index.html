@@ -399,14 +399,20 @@
 
   var RECENT_NAMES_KEY = "cinedarts_recent_names";
 
+  function isDefaultName(n){
+    return /^Joueur\s+\d+$/i.test(n);
+  }
   function getRecentNames(){
-    try{ return JSON.parse(localStorage.getItem(RECENT_NAMES_KEY) || "[]"); }catch(e){ return []; }
+    try{
+      var recent = JSON.parse(localStorage.getItem(RECENT_NAMES_KEY) || "[]");
+      return recent.filter(function(n){ return !isDefaultName(n); });
+    }catch(e){ return []; }
   }
   function saveRecentNames(names){
     var recent = getRecentNames();
     names.forEach(function(n){
       n = n.trim();
-      if(!n) return;
+      if(!n || isDefaultName(n)) return;
       recent = recent.filter(function(x){ return x.toLowerCase() !== n.toLowerCase(); });
       recent.unshift(n);
     });
@@ -426,6 +432,10 @@
       card.innerHTML = '<span class="icon">'+m.icon+'</span><h3>'+m.name+'</h3>';
       card.addEventListener("click", function(){
         setupSelectedMode = key;
+        if(MODES[setupSelectedMode].family === "killer" && playerCount < 2){
+          playerCount = 2;
+          renderNameInputs();
+        }
         renderModeGrid();
         renderModeOptions();
       });
@@ -555,7 +565,8 @@
   }
 
   document.getElementById("dec-players").addEventListener("click", function(){
-    if(playerCount>2){ playerCount--; renderNameInputs(); }
+    var minPlayers = MODES[setupSelectedMode].family === "killer" ? 2 : 1;
+    if(playerCount>minPlayers){ playerCount--; renderNameInputs(); }
   });
   document.getElementById("inc-players").addEventListener("click", function(){
     if(playerCount<8){ playerCount++; renderNameInputs(); }
