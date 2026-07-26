@@ -522,6 +522,11 @@
       rowLives.innerHTML = '<label>Vies par joueur <input type="number" id="killer-lives" min="1" max="10" value="3"></label>';
       box.appendChild(rowLives);
 
+      var rowBeginner = document.createElement("div");
+      rowBeginner.className = "opt-row";
+      rowBeginner.innerHTML = '<label><input type="checkbox" id="killer-beginner"> Mode débutant : devenir tueur en touchant simplement son numéro (double non requis)</label>';
+      box.appendChild(rowBeginner);
+
       var rowAssign = document.createElement("div");
       rowAssign.className = "opt-row";
       rowAssign.innerHTML = '<span>Attribution des numéros</span><div class="radio-pill-group">'
@@ -615,6 +620,7 @@
       players.forEach(function(p){ p.progress = 0; }); // 0..19 => target number 1..20 ; 20 => bull target ; 21 => finished
     } else if(family === "killer"){
       options.lives = Math.max(1, parseInt(document.getElementById("killer-lives").value,10) || 3);
+      options.beginnerMode = document.getElementById("killer-beginner").checked;
       var assignMode = document.querySelector('input[name="killer-assign"]:checked').value;
       var numbers;
       if(assignMode === "manual"){
@@ -928,7 +934,7 @@
 
     if(value === p.number && value !== 0){
       if(!p.isKiller){
-        if(mult === 2){
+        if(mult === 2 || state.options.beginnerMode){
           p.isKiller = true;
           state.message = p.name + " devient TUEUR ! 🔪";
         }
