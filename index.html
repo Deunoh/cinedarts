@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Cinédarts</title>
+<style>
+  :root{
+    --bg: #0b0a0d;
+    --bg-panel: rgba(255,255,255,0.04);
+    --bg-panel-strong: rgba(255,255,255,0.07);
+    --gold: #d4af37;
+    --gold-light: #f1dd9a;
+    --crimson: #8a1024;
+    --crimson-light: #b3182f;
+    --ink: #f3ecda;
+    --ink-dim: #b8ac8f;
+    --border: rgba(212,175,55,0.35);
+    --radius: 14px;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(138,16,36,0.35), transparent 60%),
+      radial-gradient(ellipse at 50% 110%, rgba(138,16,36,0.25), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    overflow:hidden;
+  }
+  .num{ font-family: 'Segoe UI', Arial, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+
+  /* --- curtains --- */
+  .curtain{
+    position:fixed; top:0; bottom:0; width:52%; z-index:500;
+    background: linear-gradient(90deg, #2c0509, #6a0e1d 35%, #8a1024 55%, #6a0e1d 75%, #2c0509);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
+    transition: transform 900ms cubic-bezier(.77,0,.18,1);
+    pointer-events:none;
+  }
+  .curtain::after{
+    content:""; position:absolute; inset:0;
+    background: repeating-linear-gradient(90deg, rgba(0,0,0,0.18) 0 14px, rgba(255,255,255,0.03) 14px 28px);
+  }
+  .curtain.left{ left:0; transform: translateX(0); }
+  .curtain.right{ right:0; transform: translateX(0); }
+  .curtain.open .curtain{ }
+  body.curtains-open .curtain.left{ transform: translateX(-105%); }
+  body.curtains-open .curtain.right{ transform: translateX(105%); }
+  body.curtains-hidden .curtain{ display:none; }
+
+  .app{
+    max-width: 1360px; height:100vh; margin: 0 auto; padding: .7rem 1.25rem .6rem;
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .screen{ display:none; }
+  .screen.active{ display:flex; flex-direction:column; flex:1; min-height:0; animation: fadein 300ms ease; }
+  @keyframes fadein{ from{ opacity:0; } to{opacity:1;} }
+
+  header.top{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    margin-bottom:.6rem; flex-wrap:wrap; flex:none;
+  }
+  .brand{ display:flex; align-items:center; gap:.6rem; }
+  .brand .clap{ font-size:1.8rem; }
+  .brand h1{
+    margin:0; font-size:1.7rem; letter-spacing:.06em;
+    color: var(--gold-light);
+    text-shadow: 0 0 18px rgba(212,175,55,0.35);
+  }
+  .brand .sub{ font-size:.75rem; color:var(--ink-dim); letter-spacing:.12em; text-transform:uppercase; }
+
+  h2.section-title{
+    font-size:.95rem; color:var(--gold-light); letter-spacing:.08em; text-transform:uppercase;
+    margin: 0 0 .6rem; border-bottom:1px solid var(--border); padding-bottom:.35rem;
+  }
+
+  .setup-grid{
+    display:grid; grid-template-columns: 1.05fr 1fr 1.15fr; gap:1rem; align-items:stretch;
+    flex:1; min-height:0;
+  }
+  .setup-panel{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:.9rem 1rem;
+    min-height:0; overflow-y:auto;
+  }
+  @media (max-width: 900px){
+    .setup-grid{ grid-template-columns:1fr; overflow-y:auto; }
+  }
+
+  button{ font-family:inherit; cursor:pointer; }
+  .btn{
+    background: var(--bg-panel-strong); color:var(--ink); border:1px solid var(--border);
+    border-radius:10px; padding:.6rem 1rem; font-size:.95rem; transition:.15s;
+  }
+  .btn:hover{ background: rgba(212,175,55,0.15); border-color:var(--gold); }
+  .btn.gold{
+    background: linear-gradient(180deg, var(--gold-light), var(--gold));
+    color:#2a1a05; border:none; font-weight:bold;
+  }
+  .btn.gold:hover{ filter:brightness(1.08); }
+  .btn.ghost{ background:transparent; }
+  .btn.small{ padding:.4rem .7rem; font-size:.8rem; }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .btn-row{ display:flex; gap:.6rem; flex-wrap:wrap; }
+
+  /* mode cards */
+  .mode-list{ display:flex; flex-direction:column; gap:.5rem; }
+  .mode-card{
+    display:flex; align-items:center; gap:.6rem;
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:10px;
+    padding:.5rem .7rem; text-align:left; color:var(--ink); transition:.15s; width:100%;
+  }
+  .mode-card:hover{ border-color:var(--gold); background:var(--bg-panel-strong); }
+  .mode-card.selected{ border-color:var(--gold); background:rgba(212,175,55,0.12); box-shadow:0 0 0 1px var(--gold); }
+  .mode-card .icon{ font-size:1.3rem; flex:none; }
+  .mode-card h3{ margin:0; color:var(--gold-light); font-size:.92rem; }
+  #mode-desc{ margin-top:.6rem; }
+
+  /* players setup */
+  .player-count-row{ display:flex; align-items:center; gap:.8rem; margin-bottom:.7rem; }
+  .stepper{ display:flex; align-items:center; gap:.5rem; }
+  .stepper button{ width:2rem; height:2rem; border-radius:50%; background:var(--bg-panel-strong); border:1px solid var(--border); color:var(--ink); font-size:1.05rem; }
+  .stepper span{ min-width:1.6rem; text-align:center; font-size:1.1rem; }
+  .name-inputs{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.5rem; }
+  .name-field{ display:flex; align-items:center; gap:.5rem; background:var(--bg-panel); border:1px solid var(--border); border-radius:10px; padding:.3rem .6rem; }
+  .name-field .swatch{ width:.7rem; height:.7rem; border-radius:50%; flex:none; }
+  .name-field input{
+    flex:1; min-width:0; background:transparent; border:none; color:var(--ink); font-family:inherit; font-size:.9rem; outline:none;
+  }
+
+  .opt-row{ display:flex; align-items:center; gap:.7rem; flex-wrap:wrap; margin-bottom:.6rem; }
+  .opt-row label{ display:flex; align-items:center; gap:.5rem; font-size:.9rem; color:var(--ink); }
+  .radio-pill-group{ display:flex; gap:.5rem; flex-wrap:wrap; }
+  .radio-pill{ position:relative; }
+  .radio-pill input{ position:absolute; opacity:0; }
+  .radio-pill span{
+    display:inline-block; padding:.4rem .9rem; border-radius:999px; border:1px solid var(--border);
+    background:var(--bg-panel); font-size:.85rem;
+  }
+  .radio-pill input:checked + span{ background:var(--gold); color:#2a1a05; border-color:var(--gold); font-weight:bold; }
+  input[type="number"]{
+    width:4.2rem; background:var(--bg-panel); border:1px solid var(--border); color:var(--ink);
+    border-radius:8px; padding:.35rem .5rem; font-family:inherit;
+  }
+  select{
+    background:var(--bg-panel); border:1px solid var(--border); color:var(--ink); border-radius:8px; padding:.3rem .5rem; font-family:inherit;
+  }
+  .manual-numbers{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.5rem; margin-top:.5rem; max-height:220px; overflow-y:auto; }
+
+  .start-bar{ margin-top:.7rem; display:flex; justify-content:flex-end; gap:.7rem; flex:none; }
+  .hint{ font-size:.78rem; color:var(--ink-dim); margin-top:.3rem; }
+
+  /* ---- game screen ---- */
+  .game-header{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.6rem; margin-bottom:.6rem; flex:none; }
+  .mode-pill{ font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; color:var(--gold-light); border:1px solid var(--border); border-radius:999px; padding:.25rem .7rem; }
+
+  .scoreboard{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.5rem; margin-bottom:.6rem;
+    flex:none; max-height:26vh; overflow-y:auto;
+  }
+  .player-card{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:.5rem .7rem; position:relative; overflow:hidden;
+  }
+  .player-card.active{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold), 0 0 22px rgba(212,175,55,0.25); background:rgba(212,175,55,0.09); }
+  .player-card.eliminated{ opacity:.4; filter:grayscale(.6); }
+  .player-card .pname{ font-size:.95rem; color:var(--ink); font-weight:bold; display:flex; align-items:center; gap:.4rem; }
+  .player-card .pname .swatch{ width:.6rem; height:.6rem; border-radius:50%; flex:none; }
+  .player-card .pscore{ font-size:2rem; margin-top:.15rem; color:var(--gold-light); }
+  .player-card .pmeta{ font-size:.85rem; color:var(--ink-dim); margin-top:.15rem; min-height:1em; }
+  .lives{ display:flex; gap:.25rem; margin-top:.35rem; }
+  .life-dot{ width:.6rem; height:.6rem; border-radius:50%; background:var(--crimson-light); box-shadow:0 0 4px rgba(179,24,47,.8); }
+  .life-dot.lost{ background:transparent; border:1px solid var(--ink-dim); box-shadow:none; }
+  .killer-badge{ font-size:.68rem; color:#111; background:var(--gold); border-radius:6px; padding:0 .35rem; margin-left:.3rem; font-family: inherit;}
+  .atc-track{ font-size:.95rem; color:var(--ink); margin-top:.3rem; letter-spacing:.03em; }
+  .atc-target{ color:var(--gold-light); font-weight:bold; font-size:1.15rem; }
+
+  .turn-strip{ display:flex; align-items:center; justify-content:center; gap:.6rem; margin-bottom:.5rem; flex:none; }
+  .dart-slot{
+    width:3.4rem; height:2rem; border-radius:8px; border:1px dashed var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:.85rem; color:var(--ink-dim);
+    background:var(--bg-panel);
+  }
+  .dart-slot.filled{ border-style:solid; color:var(--gold-light); border-color:var(--gold); background:rgba(212,175,55,0.1); }
+
+  .entry-panel{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem;
+    flex:1; min-height:0; display:flex; flex-direction:column;
+  }
+  .kbd-legend{
+    text-align:center; font-size:.72rem; color:var(--ink-dim); margin-bottom:.5rem; flex:none; letter-spacing:.02em;
+  }
+  .kbd-legend kbd{
+    display:inline-block; background:var(--bg-panel-strong); border:1px solid var(--border); border-radius:5px;
+    padding:0 .35rem; font-family:'Segoe UI', Arial, sans-serif; font-size:.7rem; color:var(--gold-light);
+  }
+  .kbd-buffer-badge{
+    margin-left:.5rem; font-weight:bold; color:var(--gold-light); font-family:'Segoe UI', Arial, sans-serif; min-width:1.4rem; display:inline-block;
+  }
+  .mult-row{ display:flex; justify-content:center; gap:.6rem; margin-bottom:.5rem; flex:none; }
+  .mult-btn{
+    padding:.4rem 1.2rem; border-radius:10px; border:1px solid var(--border); background:var(--bg-panel-strong); color:var(--ink); font-size:1rem;
+  }
+  .mult-btn.active{ background:var(--crimson-light); border-color:var(--crimson-light); color:#fff; font-weight:bold; }
+  .num-grid{
+    display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(4,1fr); gap:.45rem;
+    width:min(100%, 620px); margin:0 auto; flex:1; min-height:0;
+  }
+  .num-btn{
+    min-height:0; border-radius:10px; border:1px solid var(--border); background:var(--bg-panel-strong);
+    color:var(--ink); font-size:clamp(.85rem, 2.4vh, 1.2rem); display:flex; align-items:center; justify-content:center;
+  }
+  .num-btn:hover{ background:rgba(212,175,55,0.18); border-color:var(--gold); }
+  .num-btn:active{ transform:scale(.94); }
+  .num-btn.kbd-active{ background:rgba(212,175,55,0.3); border-color:var(--gold); box-shadow:0 0 0 2px var(--gold); }
+  .bull-row{ display:flex; justify-content:center; gap:.6rem; margin-top:.5rem; width:min(100%,620px); margin-left:auto; margin-right:auto; flex:none; }
+  .bull-row .num-btn{ flex:1; padding:.5rem; font-size:clamp(.75rem, 1.8vh, .95rem); min-height:2.2rem; }
+  .action-row{ display:flex; justify-content:center; gap:.7rem; margin-top:1rem; }
+
+  .msg-banner{
+    text-align:center; font-size:1.05rem; color:var(--gold-light); min-height:1.4em; margin-bottom:.4rem; letter-spacing:.02em;
+    flex:none;
+  }
+  .msg-banner.bust{ color:#ff6b6b; }
+
+  /* winner screen */
+  .winner-wrap{ text-align:center; padding-top:8vh; }
+  .winner-wrap .clap-big{ font-size:3rem; }
+  .winner-wrap h2{ font-size:2.2rem; color:var(--gold-light); margin:.4rem 0; text-shadow:0 0 24px rgba(212,175,55,.4); }
+  .winner-wrap p{ color:var(--ink-dim); }
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:400; padding:1rem;
+  }
+  .modal-bg.active{ display:flex; }
+  .modal{
+    background:#15121a; border:1px solid var(--border); border-radius:var(--radius); padding:1.4rem; max-width:480px; width:100%;
+    max-height:80vh; overflow:auto;
+  }
+  .modal h3{ color:var(--gold-light); margin-top:0; }
+  .modal p, .modal li{ font-size:.88rem; color:var(--ink); line-height:1.5; }
+  .modal .btn{ margin-top:1rem; }
+  .info-btn{ width:2rem; height:2rem; border-radius:50%; padding:0; }
+  footer.credit{ text-align:center; color:var(--ink-dim); font-size:.65rem; margin-top:.5rem; letter-spacing:.05em; opacity:.6; flex:none; }
+
+  @media (max-width:480px){
+    .num-grid{ grid-template-columns:repeat(4,1fr); }
+    .player-card .pscore{ font-size:1.5rem; }
+  }
+</style>
+</head>
+<body class="curtains-hidden">
+
+<div class="curtain left"></div>
+<div class="curtain right"></div>
+
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <span class="clap">🎬</span>
+      <div>
+        <h1>Cinédarts</h1>
+        <div class="sub">Cinébar &middot; salle fléchettes</div>
+      </div>
+    </div>
+    <div class="btn-row" id="header-actions"></div>
+  </header>
+
+  <!-- SETUP SCREEN -->
+  <section id="screen-setup" class="screen active">
+    <div class="setup-grid">
+      <div class="setup-panel">
+        <h2 class="section-title">1. Mode de jeu</h2>
+        <div class="mode-list" id="mode-grid"></div>
+        <p class="hint" id="mode-desc"></p>
+      </div>
+
+      <div class="setup-panel">
+        <h2 class="section-title">2. Joueurs</h2>
+        <div class="player-count-row">
+          <span>Nombre de joueurs</span>
+          <div class="stepper">
+            <button type="button" id="dec-players">−</button>
+            <span id="player-count-display">2</span>
+            <button type="button" id="inc-players">+</button>
+          </div>
+        </div>
+        <div class="name-inputs" id="name-inputs"></div>
+      </div>
+
+      <div class="setup-panel">
+        <div id="mode-options"></div>
+      </div>
+    </div>
+
+    <div class="start-bar">
+      <button class="btn gold" id="start-game-btn">Commencer la partie ▶</button>
+    </div>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="screen-game" class="screen">
+    <div class="game-header">
+      <span class="mode-pill" id="mode-pill">Mode</span>
+      <div class="btn-row">
+        <button class="btn small info-btn" id="rules-btn" title="Règles">?</button>
+        <button class="btn small" id="undo-btn">↩ Annuler le dernier lancer</button>
+        <button class="btn small ghost" id="quit-btn">✕ Quitter la partie</button>
+      </div>
+    </div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div class="msg-banner" id="msg-banner">&nbsp;</div>
+    <div class="turn-strip" id="turn-strip"></div>
+
+    <div class="entry-panel">
+      <div class="kbd-legend" id="kbd-legend">
+        ⌨ <kbd>0</kbd>-<kbd>20</kbd> puis <kbd>Entrée</kbd> · <span id="kbd-mult-hint"><kbd>S</kbd> Simple · <kbd>D</kbd> Double · <kbd>T</kbd> Triple · </span><kbd>M</kbd> Manqué · <kbd>⌫</kbd> Effacer / Annuler le dernier lancer
+        <span class="kbd-buffer-badge" id="kbd-buffer-display"></span>
+      </div>
+      <div class="mult-row" id="mult-row"></div>
+      <div class="num-grid" id="num-grid"></div>
+      <div class="bull-row" id="bull-row"></div>
+    </div>
+  </section>
+
+  <!-- WINNER SCREEN -->
+  <section id="screen-winner" class="screen">
+    <div class="winner-wrap">
+      <div class="clap-big">🏆</div>
+      <h2 id="winner-name">Vainqueur</h2>
+      <p id="winner-detail"></p>
+      <div class="btn-row" style="justify-content:center; margin-top:1.5rem;">
+        <button class="btn gold" id="replay-btn">🔁 Rejouer (mêmes joueurs)</button>
+        <button class="btn" id="new-game-btn">Nouvelle partie</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="credit">Cinédarts — fait pour le Cinébar</footer>
+</div>
+
+<div class="modal-bg" id="rules-modal">
+  <div class="modal">
+    <h3 id="rules-title">Règles</h3>
+    <div id="rules-body"></div>
+    <button class="btn gold" id="rules-close">Fermer</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var COLORS = ["#d4af37","#b3182f","#5aa9e6","#7bc47f","#e0a458","#c58ef5","#f16c8a","#8fd6c4"];
+
+  var MODES = {
+    "301": { key:"301", icon:"🎯", name:"301 / 501", desc:"Chacun part avec un capital de points et doit tomber pile à zéro. Le mode classique des fléchettes.", family:"count" },
+    "atc": { key:"atc", icon:"🕐", name:"Around the Clock", desc:"Touche les numéros 1 à 20 dans l'ordre, puis le bull. Le premier arrivé au bout gagne.", family:"atc" },
+    "killer": { key:"killer", icon:"🔪", name:"Killer", desc:"Chaque joueur défend un numéro. Deviens \"tueur\" en touchant ton double, puis élimine les vies des autres.", family:"killer" }
+  };
+
+  var RULES_TEXT = {
+    "301": "<p><b>But :</b> partir du score de départ et retomber exactement à 0.</p>"
+      + "<p>Chaque tour, 3 fléchettes sont saisies (multiplicateur + numéro touché, ou Bull / Manqué).</p>"
+      + "<p>Si le score passerait sous 0, ou si l'option \"double pour finir\" est active et que le score tomberait à 1, ou que le score atteint 0 sans que la dernière fléchette soit un double : c'est un <b>Bust</b>, le tour est annulé et le score revient à sa valeur du début du tour.</p>"
+      + "<p>Le bull intérieur (50) compte comme un double pour finir.</p>",
+    "atc": "<p><b>But :</b> toucher les numéros 1, 2, 3… jusqu'à 20, dans l'ordre, puis le Bull pour terminer.</p>"
+      + "<p>Seul un tir sur le numéro actuellement visé compte.</p>"
+      + "<p>Bonus (optionnel) : un double fait avancer de 2 numéros d'un coup, un triple de 3.</p>"
+      + "<p>Le premier joueur à atteindre le Bull remporte la partie.</p>",
+    "killer": "<p><b>But :</b> être le dernier joueur encore en vie.</p>"
+      + "<p>Chaque joueur a un numéro attribué et un nombre de vies de départ.</p>"
+      + "<p>Pour devenir <b>tueur</b>, un joueur doit toucher le <b>double</b> de son propre numéro.</p>"
+      + "<p>Une fois tueur, il peut faire perdre des vies aux autres joueurs en touchant leur numéro (simple = 1 vie, double = 2, triple = 3).</p>"
+      + "<p>Attention : si un joueur déjà tueur touche à nouveau son propre numéro, il perd lui-même des vies (autant que le multiplicateur).</p>"
+      + "<p>Un joueur à 0 vie est éliminé. Le Bull ne touche aucun numéro de joueur."
+  };
+
+  var KEYBOARD_HELP_HTML = "<h3 style='margin-bottom:.4rem;'>Contrôles clavier</h3>"
+    + "<p>Tape le numéro touché (<b>0</b> à <b>20</b>, ou <b>25</b> pour un Bull) au clavier ou au pavé numérique, puis valide avec <b>Entrée</b>.</p>"
+    + "<ul style='padding-left:1.1rem; margin:0 0 .6rem;'>"
+    + "<li><b>S</b> = Simple, <b>D</b> = Double, <b>T</b> = Triple — choisis le multiplicateur avant ou après avoir tapé le numéro</li>"
+    + "<li><b>M</b> = Manqué (validé immédiatement, pas besoin d'Entrée)</li>"
+    + "<li><b>⌫ Retour arrière</b> efface le dernier chiffre tapé — ou, si rien n'est tapé, annule le dernier lancer (comme le bouton \"Annuler\")</li>"
+    + "<li><b>Échap</b> efface tout ce qui a été tapé</li>"
+    + "</ul>";
+
+  var state = null; // current game state
+  var history = [];
+  var setupSelectedMode = "301";
+  var playerCount = 2;
+  var kbdBuffer = "";
+
+  var RECENT_NAMES_KEY = "cinedarts_recent_names";
+
+  function getRecentNames(){
+    try{ return JSON.parse(localStorage.getItem(RECENT_NAMES_KEY) || "[]"); }catch(e){ return []; }
+  }
+  function saveRecentNames(names){
+    var recent = getRecentNames();
+    names.forEach(function(n){
+      n = n.trim();
+      if(!n) return;
+      recent = recent.filter(function(x){ return x.toLowerCase() !== n.toLowerCase(); });
+      recent.unshift(n);
+    });
+    try{ localStorage.setItem(RECENT_NAMES_KEY, JSON.stringify(recent.slice(0,20))); }catch(e){}
+  }
+
+  // ---------- SETUP SCREEN ----------
+
+  function renderModeGrid(){
+    var grid = document.getElementById("mode-grid");
+    grid.innerHTML = "";
+    Object.keys(MODES).forEach(function(key){
+      var m = MODES[key];
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "mode-card" + (setupSelectedMode === key ? " selected" : "");
+      card.innerHTML = '<span class="icon">'+m.icon+'</span><h3>'+m.name+'</h3>';
+      card.addEventListener("click", function(){
+        setupSelectedMode = key;
+        renderModeGrid();
+        renderModeOptions();
+      });
+      grid.appendChild(card);
+    });
+    document.getElementById("mode-desc").textContent = MODES[setupSelectedMode].desc;
+  }
+
+  function renderNameInputs(){
+    document.getElementById("player-count-display").textContent = playerCount;
+    var wrap = document.getElementById("name-inputs");
+    var existing = Array.prototype.map.call(wrap.querySelectorAll("input"), function(i){ return i.value; });
+    wrap.innerHTML = "";
+    var recent = getRecentNames();
+    var dl = document.createElement("datalist");
+    dl.id = "recent-names-list";
+    recent.forEach(function(n){ var o=document.createElement("option"); o.value=n; dl.appendChild(o); });
+    wrap.appendChild(dl);
+
+    for(var i=0;i<playerCount;i++){
+      var field = document.createElement("div");
+      field.className = "name-field";
+      var swatch = document.createElement("span");
+      swatch.className = "swatch";
+      swatch.style.background = COLORS[i % COLORS.length];
+      var input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "Joueur " + (i+1);
+      input.value = existing[i] || (recent[i] || "");
+      input.setAttribute("list","recent-names-list");
+      input.dataset.idx = i;
+      field.appendChild(swatch);
+      field.appendChild(input);
+      wrap.appendChild(field);
+    }
+    if(MODES[setupSelectedMode].family === "killer"){
+      renderModeOptions(); // refresh manual number pickers if player count changed
+    }
+  }
+
+  function getEnteredNames(){
+    return Array.prototype.map.call(document.querySelectorAll("#name-inputs input"), function(inp,i){
+      return inp.value.trim() || ("Joueur " + (i+1));
+    });
+  }
+
+  function renderModeOptions(){
+    var box = document.getElementById("mode-options");
+    var family = MODES[setupSelectedMode].family;
+    box.innerHTML = "";
+    var title = document.createElement("h2");
+    title.className = "section-title";
+    title.textContent = "3. Options";
+    box.appendChild(title);
+
+    if(family === "count"){
+      var row1 = document.createElement("div");
+      row1.className = "opt-row";
+      row1.innerHTML = '<span>Score de départ</span><div class="radio-pill-group" id="start-score-group"></div>';
+      box.appendChild(row1);
+      var group = row1.querySelector("#start-score-group");
+      [301,501,701].forEach(function(v,i){
+        var lbl = document.createElement("label");
+        lbl.className = "radio-pill";
+        lbl.innerHTML = '<input type="radio" name="start-score" value="'+v+'" '+(v===501?"checked":"")+'><span>'+v+'</span>';
+        group.appendChild(lbl);
+      });
+      var row2 = document.createElement("div");
+      row2.className = "opt-row";
+      row2.innerHTML = '<label><input type="checkbox" id="double-out" checked> Terminer sur un double (règle officielle)</label>';
+      box.appendChild(row2);
+    }
+
+    if(family === "atc"){
+      var row = document.createElement("div");
+      row.className = "opt-row";
+      row.innerHTML = '<label><input type="checkbox" id="atc-bonus" checked> Bonus : double = +2, triple = +3 numéros d\'un coup</label>';
+      box.appendChild(row);
+    }
+
+    if(family === "killer"){
+      var rowLives = document.createElement("div");
+      rowLives.className = "opt-row";
+      rowLives.innerHTML = '<label>Vies par joueur <input type="number" id="killer-lives" min="1" max="10" value="3"></label>';
+      box.appendChild(rowLives);
+
+      var rowAssign = document.createElement("div");
+      rowAssign.className = "opt-row";
+      rowAssign.innerHTML = '<span>Attribution des numéros</span><div class="radio-pill-group">'
+        + '<label class="radio-pill"><input type="radio" name="killer-assign" value="random" checked><span>Aléatoire</span></label>'
+        + '<label class="radio-pill"><input type="radio" name="killer-assign" value="manual"><span>Manuelle</span></label>'
+        + '</div>';
+      box.appendChild(rowAssign);
+
+      var manualWrap = document.createElement("div");
+      manualWrap.className = "manual-numbers";
+      manualWrap.id = "killer-manual-wrap";
+      manualWrap.style.display = "none";
+      var names = getEnteredNames();
+      for(var i=0;i<playerCount;i++){
+        var field = document.createElement("div");
+        field.className = "name-field";
+        var label = document.createElement("span");
+        label.textContent = names[i] || ("Joueur "+(i+1));
+        label.style.fontSize=".85rem";
+        var sel = document.createElement("select");
+        sel.className = "killer-num-select";
+        sel.dataset.idx = i;
+        for(var n=1;n<=20;n++){
+          var opt = document.createElement("option");
+          opt.value = n; opt.textContent = n;
+          sel.appendChild(opt);
+        }
+        sel.value = ((i % 20) + 1);
+        field.appendChild(label);
+        field.appendChild(sel);
+        manualWrap.appendChild(field);
+      }
+      box.appendChild(manualWrap);
+
+      rowAssign.querySelectorAll('input[name="killer-assign"]').forEach(function(r){
+        r.addEventListener("change", function(){
+          manualWrap.style.display = (this.value === "manual") ? "grid" : "none";
+        });
+      });
+    }
+  }
+
+  document.getElementById("dec-players").addEventListener("click", function(){
+    if(playerCount>2){ playerCount--; renderNameInputs(); }
+  });
+  document.getElementById("inc-players").addEventListener("click", function(){
+    if(playerCount<8){ playerCount++; renderNameInputs(); }
+  });
+
+  document.getElementById("start-game-btn").addEventListener("click", function(){
+    playCurtainClose(function(){
+      startGame();
+      playCurtainOpen();
+    });
+  });
+
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+
+  function startGame(){
+    var names = getEnteredNames();
+    saveRecentNames(names);
+    var family = MODES[setupSelectedMode].family;
+
+    var players = names.map(function(name, i){
+      return {
+        name: name,
+        color: COLORS[i % COLORS.length],
+        eliminated: false
+      };
+    });
+
+    var options = {};
+    var mode = setupSelectedMode;
+
+    if(family === "count"){
+      var startScoreEl = document.querySelector('input[name="start-score"]:checked');
+      var startScore = startScoreEl ? parseInt(startScoreEl.value,10) : 501;
+      options.doubleOut = document.getElementById("double-out").checked;
+      players.forEach(function(p){ p.score = startScore; });
+      options.startScore = startScore;
+    } else if(family === "atc"){
+      options.bonus = document.getElementById("atc-bonus").checked;
+      players.forEach(function(p){ p.progress = 0; }); // 0..19 => target number 1..20 ; 20 => bull target ; 21 => finished
+    } else if(family === "killer"){
+      options.lives = Math.max(1, parseInt(document.getElementById("killer-lives").value,10) || 3);
+      var assignMode = document.querySelector('input[name="killer-assign"]:checked').value;
+      var numbers;
+      if(assignMode === "manual"){
+        numbers = Array.prototype.map.call(document.querySelectorAll(".killer-num-select"), function(s){ return parseInt(s.value,10); });
+      } else {
+        numbers = shuffle(Array.from({length:20},function(_,i){return i+1;})).slice(0, players.length);
+      }
+      players.forEach(function(p,i){
+        p.number = numbers[i];
+        p.lives = options.lives;
+        p.isKiller = false;
+      });
+    }
+
+    state = {
+      mode: mode,
+      family: family,
+      options: options,
+      players: players,
+      currentPlayerIndex: 0,
+      currentTurnThrows: [],
+      selectedMult: 1,
+      turnStartScore: family === "count" ? players[0].score : null,
+      message: "",
+      messageType: "",
+      finished: false,
+      winner: null
+    };
+    history = [];
+    kbdBuffer = "";
+
+    document.getElementById("mode-pill").textContent = MODES[mode].name;
+    showScreen("screen-game");
+    renderNumGrid();
+    renderGame();
+  }
+
+  // ---------- GAME SCREEN ----------
+
+  function pushHistory(){
+    history.push(JSON.parse(JSON.stringify(state)));
+    if(history.length > 200) history.shift();
+  }
+
+  function undo(){
+    if(history.length === 0) return;
+    state = history.pop();
+    kbdBuffer = "";
+    renderGame();
+  }
+
+  document.getElementById("undo-btn").addEventListener("click", undo);
+
+  document.getElementById("quit-btn").addEventListener("click", function(){
+    if(confirm("Quitter la partie en cours et revenir au menu ?")){
+      playCurtainClose(function(){
+        showScreen("screen-setup");
+        playCurtainOpen();
+      });
+    }
+  });
+
+  document.getElementById("rules-btn").addEventListener("click", function(){
+    document.getElementById("rules-title").textContent = "Règles — " + MODES[state.mode].name;
+    document.getElementById("rules-body").innerHTML = RULES_TEXT[state.mode] + KEYBOARD_HELP_HTML;
+    document.getElementById("rules-modal").classList.add("active");
+  });
+  document.getElementById("rules-close").addEventListener("click", function(){
+    document.getElementById("rules-modal").classList.remove("active");
+  });
+  document.getElementById("rules-modal").addEventListener("click", function(e){
+    if(e.target === this) this.classList.remove("active");
+  });
+
+  function renderNumGrid(){
+    var showMultiplier = !(state.family === "atc" && !state.options.bonus);
+
+    var multRow = document.getElementById("mult-row");
+    multRow.innerHTML = "";
+    multRow.style.display = showMultiplier ? "" : "none";
+    if(!showMultiplier) state.selectedMult = 1;
+    var kbdMultHint = document.getElementById("kbd-mult-hint");
+    if(kbdMultHint) kbdMultHint.style.display = showMultiplier ? "" : "none";
+    [1,2,3].forEach(function(m){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "mult-btn" + (state.selectedMult === m ? " active" : "");
+      b.textContent = (m===1?"Simple":m===2?"Double":"Triple");
+      b.addEventListener("click", function(){
+        state.selectedMult = m;
+        renderNumGrid();
+      });
+      multRow.appendChild(b);
+    });
+
+    var numGrid = document.getElementById("num-grid");
+    numGrid.innerHTML = "";
+    for(var n=1;n<=20;n++){
+      (function(n){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "num-btn";
+        b.textContent = n;
+        b.addEventListener("click", function(){ recordThrow(state.selectedMult, n, labelFor(state.selectedMult,n)); });
+        numGrid.appendChild(b);
+      })(n);
+    }
+
+    var bullRow = document.getElementById("bull-row");
+    bullRow.innerHTML = "";
+    var bOuter = document.createElement("button");
+    bOuter.type="button"; bOuter.className="num-btn"; bOuter.textContent="Bull ext. (25)";
+    bOuter.addEventListener("click", function(){ recordThrow(1,25,"Bull25"); });
+    var bInner = document.createElement("button");
+    bInner.type="button"; bInner.className="num-btn"; bInner.textContent="Bull (50)";
+    bInner.addEventListener("click", function(){ recordThrow(2,25,"Bull50"); });
+    var miss = document.createElement("button");
+    miss.type="button"; miss.className="num-btn"; miss.textContent="Manqué";
+    miss.addEventListener("click", function(){ recordThrow(1,0,"—"); });
+    bullRow.appendChild(bOuter);
+    bullRow.appendChild(bInner);
+    bullRow.appendChild(miss);
+
+    highlightKeyboardBuffer();
+  }
+
+  function renderKbdBuffer(){
+    var el = document.getElementById("kbd-buffer-display");
+    if(el) el.textContent = kbdBuffer;
+  }
+
+  function highlightKeyboardBuffer(){
+    renderKbdBuffer();
+    document.querySelectorAll("#num-grid .num-btn").forEach(function(b){
+      b.classList.toggle("kbd-active", kbdBuffer !== "" && b.textContent === kbdBuffer);
+    });
+  }
+
+  function appendKbdDigit(d){
+    var next = kbdBuffer + d;
+    if(next.length > 2) next = next.slice(-2);
+    kbdBuffer = next;
+    highlightKeyboardBuffer();
+  }
+
+  function confirmKeyboardThrow(){
+    if(kbdBuffer === "") return;
+    var value = parseInt(kbdBuffer, 10);
+    kbdBuffer = "";
+    if(value === 25){
+      var m = state.selectedMult === 3 ? 2 : state.selectedMult;
+      recordThrow(m, 25, m === 2 ? "Bull50" : "Bull25");
+    } else if(value >= 1 && value <= 20){
+      recordThrow(state.selectedMult, value, labelFor(state.selectedMult, value));
+    } else if(value === 0){
+      recordThrow(1, 0, "—");
+    }
+    highlightKeyboardBuffer();
+  }
+
+  document.addEventListener("keydown", function(e){
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    if(!state || state.finished) return;
+    if(!document.getElementById("screen-game").classList.contains("active")) return;
+    if(document.getElementById("rules-modal").classList.contains("active")) return;
+
+    var key = e.key;
+    if(key >= "0" && key <= "9"){
+      e.preventDefault();
+      appendKbdDigit(key);
+    } else if(key === "Enter"){
+      e.preventDefault();
+      confirmKeyboardThrow();
+    } else if(key === "Backspace"){
+      e.preventDefault();
+      if(kbdBuffer === ""){
+        undo();
+      } else {
+        kbdBuffer = kbdBuffer.slice(0, -1);
+        highlightKeyboardBuffer();
+      }
+    } else if(key === "Escape"){
+      kbdBuffer = "";
+      highlightKeyboardBuffer();
+    } else if(key.toLowerCase() === "s"){
+      state.selectedMult = 1;
+      renderNumGrid();
+    } else if(key.toLowerCase() === "d"){
+      state.selectedMult = 2;
+      renderNumGrid();
+    } else if(key.toLowerCase() === "t"){
+      state.selectedMult = 3;
+      renderNumGrid();
+    } else if(key.toLowerCase() === "m"){
+      e.preventDefault();
+      kbdBuffer = "";
+      recordThrow(1, 0, "—");
+    }
+  });
+
+  function labelFor(mult, n){
+    if(mult===1) return "S"+n;
+    if(mult===2) return "D"+n;
+    return "T"+n;
+  }
+
+  function activePlayer(){ return state.players[state.currentPlayerIndex]; }
+
+  function recordThrow(mult, value, label){
+    if(state.finished) return;
+    pushHistory();
+    state.message = "";
+    state.messageType = "";
+
+    var endTurnNow = false;
+
+    if(state.family === "count"){
+      endTurnNow = applyCountThrow(mult, value, label);
+    } else if(state.family === "atc"){
+      endTurnNow = applyAtcThrow(mult, value, label);
+    } else if(state.family === "killer"){
+      endTurnNow = applyKillerThrow(mult, value, label);
+    }
+
+    if(state.finished){
+      renderGame();
+      setTimeout(showWinner, 650);
+      return;
+    }
+
+    state.currentTurnThrows.push(label);
+
+    if(endTurnNow || state.currentTurnThrows.length >= 3){
+      advanceTurn();
+    }
+    state.selectedMult = 1;
+
+    renderGame();
+  }
+
+  function advanceTurn(){
+    state.currentTurnThrows = [];
+    var n = state.players.length;
+    var tries = 0;
+    do{
+      state.currentPlayerIndex = (state.currentPlayerIndex + 1) % n;
+      tries++;
+    } while(state.players[state.currentPlayerIndex].eliminated && tries <= n);
+    state.selectedMult = 1;
+    kbdBuffer = "";
+    if(state.family === "count"){
+      state.turnStartScore = activePlayer().score;
+    }
+  }
+
+  function applyCountThrow(mult, value, label){
+    var p = activePlayer();
+    var dartScore = value * mult;
+    var remaining = p.score - dartScore;
+    var isDouble = (mult === 2) || label === "Bull50";
+
+    if(remaining < 0 || (remaining === 1 && state.options.doubleOut) || (remaining === 0 && state.options.doubleOut && !isDouble)){
+      p.score = state.turnStartScore;
+      state.message = label + " — BUST ! Le tour est annulé.";
+      state.messageType = "bust";
+      return true;
+    }
+    if(remaining === 0){
+      p.score = 0;
+      state.message = p.name + " termine la partie ! 🎉";
+      state.finished = true;
+      state.winner = p;
+      return true;
+    }
+    p.score = remaining;
+    return false;
+  }
+
+  function applyAtcThrow(mult, value, label){
+    var p = activePlayer();
+    var targetIsBull = p.progress >= 20;
+    var hit = false;
+    var steps = 1;
+
+    if(targetIsBull){
+      hit = (value === 25);
+      steps = 1;
+    } else {
+      var targetNumber = p.progress + 1;
+      hit = (value === targetNumber);
+      if(hit && state.options.bonus) steps = mult;
+    }
+
+    if(hit){
+      p.progress = Math.min(21, p.progress + steps);
+      state.message = p.name + " touche " + (targetIsBull ? "le Bull" : ("le "+ (p.progress) )) + " !";
+      if(p.progress >= 21){
+        state.message = p.name + " a fini le parcours ! 🎉";
+        state.finished = true;
+        state.winner = p;
+        return true;
+      }
+    } else {
+      state.message = "";
+    }
+    return false;
+  }
+
+  function applyKillerThrow(mult, value, label){
+    var p = activePlayer();
+
+    if(value === p.number && value !== 0){
+      if(!p.isKiller){
+        if(mult === 2){
+          p.isKiller = true;
+          state.message = p.name + " devient TUEUR ! 🔪";
+        }
+      } else {
+        p.lives -= mult;
+        state.message = p.name + " se blesse sur son propre numéro (-" + mult + ")";
+        if(p.lives <= 0){
+          p.lives = 0;
+          p.eliminated = true;
+          state.message = p.name + " est éliminé !";
+        }
+      }
+    } else if(value >= 1 && value <= 20){
+      var target = state.players.find(function(o){ return o.number === value && !o.eliminated && o !== p; });
+      if(target){
+        if(p.isKiller){
+          target.lives -= mult;
+          state.message = p.name + " touche " + target.name + " (-" + mult + ")";
+          if(target.lives <= 0){
+            target.lives = 0;
+            target.eliminated = true;
+            state.message = target.name + " est éliminé par " + p.name + " !";
+          }
+        }
+      }
+    }
+
+    var alive = state.players.filter(function(o){ return !o.eliminated; });
+    if(alive.length === 1){
+      state.finished = true;
+      state.winner = alive[0];
+      state.message = alive[0].name + " remporte la partie ! 🎉";
+      return true;
+    }
+    return false;
+  }
+
+  function renderGame(){
+    var sb = document.getElementById("scoreboard");
+    sb.innerHTML = "";
+    state.players.forEach(function(p, i){
+      var card = document.createElement("div");
+      card.className = "player-card" + (i === state.currentPlayerIndex && !p.eliminated ? " active" : "") + (p.eliminated ? " eliminated" : "");
+
+      var nameRow = '<div class="pname"><span class="swatch" style="background:'+p.color+'"></span>' + p.name
+        + (state.family==="killer" && p.isKiller ? '<span class="killer-badge">TUEUR</span>' : '') + '</div>';
+
+      var body = "";
+      if(state.family === "count"){
+        body = '<div class="pscore num">' + p.score + '</div><div class="pmeta">Score restant</div>';
+      } else if(state.family === "atc"){
+        var targetLabel = p.progress >= 21 ? "Terminé !" : (p.progress >= 20 ? "Bull" : (p.progress+1));
+        body = '<div class="pscore num">' + Math.min(p.progress,21) + '/21</div>'
+          + '<div class="atc-track">Prochain : <span class="atc-target">' + targetLabel + '</span></div>';
+      } else if(state.family === "killer"){
+        var dots = "";
+        var maxLives = state.options.lives;
+        for(var l=0;l<maxLives;l++){
+          dots += '<span class="life-dot' + (l < p.lives ? "" : " lost") + '"></span>';
+        }
+        body = '<div class="pscore num">N°' + p.number + '</div><div class="lives">' + dots + '</div>';
+      }
+
+      card.innerHTML = nameRow + body;
+      sb.appendChild(card);
+    });
+
+    var banner = document.getElementById("msg-banner");
+    banner.textContent = state.message || " ";
+    banner.className = "msg-banner" + (state.messageType === "bust" ? " bust" : "");
+
+    var strip = document.getElementById("turn-strip");
+    strip.innerHTML = "";
+    for(var s=0;s<3;s++){
+      var slot = document.createElement("div");
+      slot.className = "dart-slot" + (state.currentTurnThrows[s] ? " filled" : "");
+      slot.textContent = state.currentTurnThrows[s] || "–";
+      strip.appendChild(slot);
+    }
+
+    document.getElementById("undo-btn").disabled = history.length === 0;
+    renderNumGrid();
+  }
+
+  function showWinner(){
+    document.getElementById("winner-name").textContent = state.winner ? state.winner.name : "?";
+    document.getElementById("winner-detail").textContent = "Mode : " + MODES[state.mode].name;
+    playCurtainClose(function(){
+      showScreen("screen-winner");
+      playCurtainOpen();
+    });
+  }
+
+  document.getElementById("replay-btn").addEventListener("click", function(){
+    var mode = state.mode, players = state.players;
+    var names = players.map(function(p){ return p.name; });
+    playCurtainClose(function(){
+      setupSelectedMode = mode;
+      playerCount = names.length;
+      showScreen("screen-setup");
+      renderModeGrid();
+      renderNameInputs();
+      Array.prototype.forEach.call(document.querySelectorAll("#name-inputs input"), function(inp,i){ inp.value = names[i]; });
+      renderModeOptions();
+      startGame();
+      playCurtainOpen();
+    });
+  });
+
+  document.getElementById("new-game-btn").addEventListener("click", function(){
+    playCurtainClose(function(){
+      showScreen("screen-setup");
+      playCurtainOpen();
+    });
+  });
+
+  // ---------- SCREEN / CURTAIN HELPERS ----------
+
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+    document.getElementById(id).classList.add("active");
+  }
+
+  function playCurtainClose(cb){
+    document.body.classList.remove("curtains-hidden");
+    document.body.classList.remove("curtains-open");
+    requestAnimationFrame(function(){
+      setTimeout(function(){ if(cb) cb(); }, 500);
+    });
+  }
+  function playCurtainOpen(){
+    requestAnimationFrame(function(){
+      document.body.classList.add("curtains-open");
+      setTimeout(function(){ document.body.classList.add("curtains-hidden"); }, 1000);
+    });
+  }
+
+  // initial curtain intro
+  window.addEventListener("load", function(){
+    document.body.classList.remove("curtains-hidden");
+    setTimeout(function(){
+      document.body.classList.add("curtains-open");
+      setTimeout(function(){ document.body.classList.add("curtains-hidden"); }, 1000);
+    }, 300);
+  });
+
+  // ---------- INIT ----------
+  renderModeGrid();
+  renderNameInputs();
+  renderModeOptions();
+
+})();
+</script>
+</body>
+</html>
