@@ -13,6 +13,10 @@ open index.html
 
 Ou double-clique simplement sur `index.html` dans le Finder.
 
+### Plein écran (⛶, tous OS / tous navigateurs)
+
+Un bouton **⛶** est disponible en jeu, à côté de "Annuler" : il bascule l'appli en plein écran via l'API standard du navigateur. Fonctionne sur Chrome, Brave, Edge, Firefox, Safari, quel que soit l'OS — pas de script ni d'installation nécessaire.
+
 ## Modes de jeu
 
 - **301 / 501** — Score de départ configurable (301, 501 ou 701), avec ou sans règle du double pour terminer.

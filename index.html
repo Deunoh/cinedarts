@@ -273,7 +273,9 @@
         <div class="sub">Cinébar &middot; salle fléchettes</div>
       </div>
     </div>
-    <div class="btn-row" id="header-actions"></div>
+    <div class="btn-row" id="header-actions">
+      <button class="btn small ghost" id="fullscreen-btn" title="Plein écran">⛶</button>
+    </div>
   </header>
 
   <!-- SETUP SCREEN -->
@@ -680,6 +682,32 @@
   }
 
   document.getElementById("undo-btn").addEventListener("click", undo);
+
+  function isFullscreen(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function toggleFullscreen(){
+    if(!isFullscreen()){
+      var el = document.documentElement;
+      var request = el.requestFullscreen || el.webkitRequestFullscreen;
+      if(request) request.call(el);
+    } else {
+      var exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if(exit) exit.call(document);
+    }
+  }
+
+  function updateFullscreenBtn(){
+    var btn = document.getElementById("fullscreen-btn");
+    if(!btn) return;
+    btn.textContent = isFullscreen() ? "⛝" : "⛶";
+    btn.title = isFullscreen() ? "Quitter le plein écran" : "Plein écran";
+  }
+
+  document.getElementById("fullscreen-btn").addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", updateFullscreenBtn);
+  document.addEventListener("webkitfullscreenchange", updateFullscreenBtn);
 
   document.getElementById("quit-btn").addEventListener("click", function(){
     if(confirm("Quitter la partie en cours et revenir au menu ?")){
