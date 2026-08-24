@@ -29,7 +29,6 @@ Un bouton **⛶** est disponible en jeu, à côté de "Annuler" : il bascule l'a
 - Le mode **1 joueur** (entraînement) est disponible pour 301/501 et Around the Clock.
 - Killer nécessite un minimum de **2 joueurs** (passer sur Killer avec 1 joueur sélectionné remonte automatiquement le compteur à 2).
 - **2 joueurs par défaut** au lancement de l'appli.
-- Les noms récemment utilisés sont proposés en auto-complétion lors de la saisie.
 
 ## Contrôles clavier en jeu
 
