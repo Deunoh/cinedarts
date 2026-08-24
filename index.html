@@ -405,28 +405,6 @@
   var playerCount = 2;
   var kbdBuffer = "";
 
-  var RECENT_NAMES_KEY = "cinedarts_recent_names";
-
-  function isDefaultName(n){
-    return /^Joueur\s+\d+$/i.test(n);
-  }
-  function getRecentNames(){
-    try{
-      var recent = JSON.parse(localStorage.getItem(RECENT_NAMES_KEY) || "[]");
-      return recent.filter(function(n){ return !isDefaultName(n); });
-    }catch(e){ return []; }
-  }
-  function saveRecentNames(names){
-    var recent = getRecentNames();
-    names.forEach(function(n){
-      n = n.trim();
-      if(!n || isDefaultName(n)) return;
-      recent = recent.filter(function(x){ return x.toLowerCase() !== n.toLowerCase(); });
-      recent.unshift(n);
-    });
-    try{ localStorage.setItem(RECENT_NAMES_KEY, JSON.stringify(recent.slice(0,20))); }catch(e){}
-  }
-
   // ---------- SETUP SCREEN ----------
 
   function renderModeGrid(){
@@ -457,11 +435,6 @@
     var wrap = document.getElementById("name-inputs");
     var existing = Array.prototype.map.call(wrap.querySelectorAll("input"), function(i){ return i.value; });
     wrap.innerHTML = "";
-    var recent = getRecentNames();
-    var dl = document.createElement("datalist");
-    dl.id = "recent-names-list";
-    recent.forEach(function(n){ var o=document.createElement("option"); o.value=n; dl.appendChild(o); });
-    wrap.appendChild(dl);
 
     for(var i=0;i<playerCount;i++){
       var field = document.createElement("div");
@@ -472,8 +445,7 @@
       var input = document.createElement("input");
       input.type = "text";
       input.placeholder = "Joueur " + (i+1);
-      input.value = existing[i] || (recent[i] || "");
-      input.setAttribute("list","recent-names-list");
+      input.value = existing[i] || "";
       input.dataset.idx = i;
       field.appendChild(swatch);
       field.appendChild(input);
@@ -577,6 +549,19 @@
     }
   }
 
+  function applyOptionsToForm(family, options){
+    if(family === "count"){
+      var radio = document.querySelector('input[name="start-score"][value="'+options.startScore+'"]');
+      if(radio) radio.checked = true;
+      document.getElementById("double-out").checked = !!options.doubleOut;
+    } else if(family === "atc"){
+      document.getElementById("atc-bonus").checked = !!options.bonus;
+    } else if(family === "killer"){
+      document.getElementById("killer-lives").value = options.lives;
+      document.getElementById("killer-beginner").checked = !!options.beginnerMode;
+    }
+  }
+
   document.getElementById("dec-players").addEventListener("click", function(){
     var minPlayers = MODES[setupSelectedMode].family === "killer" ? 2 : 1;
     if(playerCount>minPlayers){ playerCount--; renderNameInputs(); }
@@ -603,7 +588,6 @@
 
   function startGame(){
     var names = getEnteredNames();
-    saveRecentNames(names);
     var family = MODES[setupSelectedMode].family;
 
     var players = names.map(function(name, i){
@@ -1074,7 +1058,7 @@
   }
 
   document.getElementById("replay-btn").addEventListener("click", function(){
-    var mode = state.mode, players = state.players;
+    var mode = state.mode, players = state.players, options = state.options;
     var names = players.map(function(p){ return p.name; });
     playCurtainClose(function(){
       setupSelectedMode = mode;
@@ -1084,7 +1068,7 @@
       renderNameInputs();
       Array.prototype.forEach.call(document.querySelectorAll("#name-inputs input"), function(inp,i){ inp.value = names[i]; });
       renderModeOptions();
-      startGame();
+      applyOptionsToForm(MODES[setupSelectedMode].family, options);
       playCurtainOpen();
     });
   });
