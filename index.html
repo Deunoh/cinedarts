@@ -151,7 +151,37 @@
   }
   .manual-numbers{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.5rem; margin-top:.5rem; max-height:220px; overflow-y:auto; }
 
-  .start-bar{ margin-top:.7rem; display:flex; justify-content:flex-end; gap:.7rem; flex:none; }
+  .known-players{ margin-top:.8rem; }
+  .known-players .hint{ margin:0 0 .4rem; }
+  .chip-list{ display:flex; flex-wrap:wrap; gap:.4rem; }
+  .player-chip{
+    background:var(--bg-panel-strong); border:1px solid var(--border); color:var(--ink);
+    border-radius:999px; padding:.25rem .7rem; font-size:.8rem;
+  }
+  .player-chip:hover{ background:rgba(212,175,55,0.18); border-color:var(--gold); }
+
+  .start-bar{ margin-top:.7rem; display:flex; justify-content:space-between; gap:.7rem; flex:none; }
+
+  /* ---- stats screen ---- */
+  .stats-grid{ display:grid; grid-template-columns:1.4fr 1fr; gap:1rem; flex:1; min-height:0; }
+  @media (max-width: 900px){ .stats-grid{ grid-template-columns:1fr; overflow-y:auto; } }
+  .stats-table{ width:100%; border-collapse:collapse; font-size:.9rem; }
+  .stats-table th{
+    text-align:left; font-weight:normal; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-dim); padding:.3rem .4rem; border-bottom:1px solid var(--border);
+  }
+  .stats-table td{ padding:.45rem .4rem; border-bottom:1px solid rgba(212,175,55,0.12); }
+  .stats-table th.r, .stats-table td.r{ text-align:right; }
+  .stats-table .rank{ width:2rem; text-align:center; }
+  .stats-table .pname-cell{ color:var(--ink); font-weight:bold; }
+  .stats-table tr.top td{ color:var(--gold-light); }
+  .win-bar{ display:inline-block; width:4rem; height:.4rem; border-radius:999px; background:var(--bg-panel-strong); vertical-align:middle; margin-right:.4rem; overflow:hidden; }
+  .win-bar span{ display:block; height:100%; background:var(--gold); }
+  .recent-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.45rem; }
+  .recent-list li{ background:var(--bg-panel); border:1px solid rgba(212,175,55,0.2); border-radius:10px; padding:.45rem .6rem; font-size:.85rem; }
+  .recent-list .meta{ font-size:.72rem; color:var(--ink-dim); }
+  .recent-list .winner{ color:var(--gold-light); font-weight:bold; }
+  .empty-state{ color:var(--ink-dim); font-size:.9rem; text-align:center; padding:2rem 1rem; }
   .hint{ font-size:.78rem; color:var(--ink-dim); margin-top:.3rem; }
 
   /* ---- game screen ---- */
@@ -298,6 +328,8 @@
           </div>
         </div>
         <div class="name-inputs" id="name-inputs"></div>
+        <datalist id="known-players-list"></datalist>
+        <div class="known-players" id="known-players"></div>
       </div>
 
       <div class="setup-panel">
@@ -306,7 +338,29 @@
     </div>
 
     <div class="start-bar">
+      <button class="btn stats-open-btn">📊 Statistiques</button>
       <button class="btn gold" id="start-game-btn">Commencer la partie ▶</button>
+    </div>
+  </section>
+
+  <!-- STATS SCREEN -->
+  <section id="screen-stats" class="screen">
+    <div class="game-header">
+      <div class="radio-pill-group" id="stats-mode-filter"></div>
+      <div class="btn-row">
+        <button class="btn small ghost" id="stats-reset-btn">🗑 Réinitialiser</button>
+        <button class="btn small" id="stats-back-btn">← Retour</button>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="setup-panel">
+        <h2 class="section-title">Classement</h2>
+        <div id="stats-ranking"></div>
+      </div>
+      <div class="setup-panel">
+        <h2 class="section-title">Dernières parties</h2>
+        <div id="stats-recent"></div>
+      </div>
     </div>
   </section>
 
@@ -346,6 +400,7 @@
       <div class="btn-row" style="justify-content:center; margin-top:1.5rem;">
         <button class="btn gold" id="replay-btn">🔁 Rejouer (mêmes joueurs)</button>
         <button class="btn" id="new-game-btn">Nouvelle partie</button>
+        <button class="btn stats-open-btn">📊 Statistiques</button>
       </div>
     </div>
   </section>
@@ -405,6 +460,51 @@
   var playerCount = 2;
   var kbdBuffer = "";
 
+  // ---------- STORAGE (joueurs connus + historique des parties) ----------
+
+  var STORAGE_KEY = "cinedarts.v1";
+  var store = loadStore();
+
+  function loadStore(){
+    try{
+      var s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if(s && s.players && s.games) return s;
+    }catch(e){}
+    return { players:{}, games:[] }; // players: { key: {name, lastPlayed} }, games: [{date, mode, players:[{name,guest}], winner}]
+  }
+
+  function saveStore(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }catch(e){}
+  }
+
+  function playerKey(name){ return name.trim().toLowerCase(); }
+
+  function knownPlayers(){
+    return Object.keys(store.players).map(function(k){ return store.players[k]; })
+      .sort(function(a,b){ return b.lastPlayed - a.lastPlayed; });
+  }
+
+  function recordGame(){
+    if(state.players.length < 2) return; // les parties solo ne comptent pas dans les stats
+    var now = Date.now();
+    store.games.push({
+      date: now,
+      mode: state.mode,
+      players: state.players.map(function(p){ return { name:p.name, guest:!!p.guest }; }),
+      winner: state.players.indexOf(state.winner)
+    });
+    state.players.forEach(function(p){
+      if(!p.guest) store.players[playerKey(p.name)] = { name:p.name, lastPlayed:now };
+    });
+    saveStore();
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
   // ---------- SETUP SCREEN ----------
 
   function renderModeGrid(){
@@ -447,6 +547,9 @@
       input.placeholder = "Joueur " + (i+1);
       input.value = existing[i] || "";
       input.dataset.idx = i;
+      input.setAttribute("list", "known-players-list");
+      input.autocomplete = "off";
+      input.addEventListener("input", renderKnownPlayers);
       field.appendChild(swatch);
       field.appendChild(input);
       wrap.appendChild(field);
@@ -454,6 +557,56 @@
     if(MODES[setupSelectedMode].family === "killer"){
       renderModeOptions(); // refresh manual number pickers if player count changed
     }
+    renderKnownPlayers();
+  }
+
+  function renderKnownPlayers(){
+    var inputs = document.querySelectorAll("#name-inputs input");
+    var used = {};
+    Array.prototype.forEach.call(inputs, function(inp){ if(inp.value.trim()) used[playerKey(inp.value)] = true; });
+
+    var all = knownPlayers();
+    var datalist = document.getElementById("known-players-list");
+    datalist.innerHTML = "";
+    all.forEach(function(p){
+      var opt = document.createElement("option");
+      opt.value = p.name;
+      datalist.appendChild(opt);
+    });
+
+    var box = document.getElementById("known-players");
+    box.innerHTML = "";
+    var available = all.filter(function(p){ return !used[playerKey(p.name)]; }).slice(0, 16);
+    if(available.length === 0) return;
+    var hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "Joueurs habituels — touche un nom pour l'ajouter :";
+    box.appendChild(hint);
+    var list = document.createElement("div");
+    list.className = "chip-list";
+    available.forEach(function(p){
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "player-chip";
+      chip.textContent = p.name;
+      chip.addEventListener("click", function(){ addKnownPlayer(p.name); });
+      list.appendChild(chip);
+    });
+    box.appendChild(list);
+  }
+
+  function addKnownPlayer(name){
+    var empty = Array.prototype.find.call(document.querySelectorAll("#name-inputs input"), function(inp){ return !inp.value.trim(); });
+    if(!empty){
+      if(playerCount >= 8) return;
+      playerCount++;
+      renderNameInputs();
+      var inputs = document.querySelectorAll("#name-inputs input");
+      empty = inputs[inputs.length - 1];
+    }
+    empty.value = name;
+    renderKnownPlayers();
+    if(MODES[setupSelectedMode].family === "killer") renderModeOptions();
   }
 
   function getEnteredNames(){
@@ -587,12 +740,14 @@
   }
 
   function startGame(){
-    var names = getEnteredNames();
     var family = MODES[setupSelectedMode].family;
 
-    var players = names.map(function(name, i){
+    var players = Array.prototype.map.call(document.querySelectorAll("#name-inputs input"), function(inp, i){
+      var typed = inp.value.trim();
+      var known = typed && store.players[playerKey(typed)];
       return {
-        name: name,
+        name: known ? known.name : (typed || ("Joueur " + (i+1))),
+        guest: !typed, // nom par défaut : pas enregistré dans les stats
         color: COLORS[i % COLORS.length],
         eliminated: false,
         lastThrows: []
@@ -1001,7 +1156,7 @@
       var card = document.createElement("div");
       card.className = "player-card" + (i === state.currentPlayerIndex && !p.eliminated ? " active" : "") + (p.eliminated ? " eliminated" : "");
 
-      var nameRow = '<div class="pname"><span class="swatch" style="background:'+p.color+'"></span>' + p.name
+      var nameRow = '<div class="pname"><span class="swatch" style="background:'+p.color+'"></span>' + escapeHtml(p.name)
         + (state.family==="killer" && p.isKiller ? '<span class="killer-badge">TUEUR</span>' : '') + '</div>';
 
       var body = "";
@@ -1049,6 +1204,7 @@
   }
 
   function showWinner(){
+    recordGame();
     document.getElementById("winner-name").textContent = state.winner ? state.winner.name : "?";
     document.getElementById("winner-detail").textContent = "Mode : " + MODES[state.mode].name;
     playCurtainClose(function(){
@@ -1059,7 +1215,7 @@
 
   document.getElementById("replay-btn").addEventListener("click", function(){
     var mode = state.mode, players = state.players, options = state.options;
-    var names = players.map(function(p){ return p.name; });
+    var names = players.map(function(p){ return p.guest ? "" : p.name; });
     playCurtainClose(function(){
       setupSelectedMode = mode;
       playerCount = names.length;
@@ -1067,6 +1223,7 @@
       renderModeGrid();
       renderNameInputs();
       Array.prototype.forEach.call(document.querySelectorAll("#name-inputs input"), function(inp,i){ inp.value = names[i]; });
+      renderKnownPlayers();
       renderModeOptions();
       applyOptionsToForm(MODES[setupSelectedMode].family, options);
       playCurtainOpen();
@@ -1078,6 +1235,106 @@
       showScreen("screen-setup");
       playCurtainOpen();
     });
+  });
+
+  // ---------- STATS SCREEN ----------
+
+  var statsModeFilter = "all";
+  var statsReturnScreen = "screen-setup";
+
+  function computeRanking(){
+    var rows = {};
+    store.games.forEach(function(g){
+      if(statsModeFilter !== "all" && g.mode !== statsModeFilter) return;
+      g.players.forEach(function(p, i){
+        if(p.guest) return;
+        var k = playerKey(p.name);
+        var r = rows[k] || (rows[k] = { name:(store.players[k] || p).name, played:0, wins:0 });
+        r.played++;
+        if(i === g.winner) r.wins++;
+      });
+    });
+    return Object.keys(rows).map(function(k){ return rows[k]; }).sort(function(a,b){
+      return (b.wins - a.wins) || (b.wins/b.played - a.wins/a.played) || a.name.localeCompare(b.name);
+    });
+  }
+
+  function renderStatsFilter(){
+    var box = document.getElementById("stats-mode-filter");
+    box.innerHTML = "";
+    var opts = [["all","Tous les modes"]].concat(Object.keys(MODES).map(function(k){ return [k, MODES[k].name]; }));
+    opts.forEach(function(o){
+      var lbl = document.createElement("label");
+      lbl.className = "radio-pill";
+      lbl.innerHTML = '<input type="radio" name="stats-mode" value="'+o[0]+'" '+(statsModeFilter===o[0]?"checked":"")+'><span>'+o[1]+'</span>';
+      lbl.querySelector("input").addEventListener("change", function(){
+        statsModeFilter = this.value;
+        renderStats();
+      });
+      box.appendChild(lbl);
+    });
+  }
+
+  function renderStats(){
+    var ranking = computeRanking();
+    var rankBox = document.getElementById("stats-ranking");
+    if(ranking.length === 0){
+      rankBox.innerHTML = '<div class="empty-state">Aucune partie enregistrée pour l\'instant.<br>Donne un nom aux joueurs et termine une partie à 2 ou plus pour alimenter le classement.</div>';
+    } else {
+      var medals = ["🥇","🥈","🥉"];
+      rankBox.innerHTML = '<table class="stats-table"><thead><tr>'
+        + '<th class="rank">#</th><th>Joueur</th><th class="r">Parties</th><th class="r">Victoires</th><th class="r">% victoires</th>'
+        + '</tr></thead><tbody>'
+        + ranking.map(function(r, i){
+            var pct = Math.round(100 * r.wins / r.played);
+            return '<tr class="'+(i===0 && r.wins>0 ? "top" : "")+'">'
+              + '<td class="rank">'+(r.wins>0 && medals[i] ? medals[i] : (i+1))+'</td>'
+              + '<td class="pname-cell">'+escapeHtml(r.name)+'</td>'
+              + '<td class="r num">'+r.played+'</td>'
+              + '<td class="r num">'+r.wins+'</td>'
+              + '<td class="r num"><span class="win-bar"><span style="width:'+pct+'%"></span></span>'+pct+'%</td>'
+              + '</tr>';
+          }).join("")
+        + '</tbody></table>';
+    }
+
+    var games = store.games.filter(function(g){ return statsModeFilter === "all" || g.mode === statsModeFilter; })
+      .slice(-15).reverse();
+    var recentBox = document.getElementById("stats-recent");
+    if(games.length === 0){
+      recentBox.innerHTML = '<div class="empty-state">Aucune partie.</div>';
+    } else {
+      recentBox.innerHTML = '<ul class="recent-list">' + games.map(function(g){
+        var d = new Date(g.date);
+        var when = d.toLocaleDateString("fr-FR", { day:"numeric", month:"short" }) + " " + d.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" });
+        var winner = g.players[g.winner];
+        var others = g.players.filter(function(_, i){ return i !== g.winner; }).map(function(p){ return escapeHtml(p.name); }).join(", ");
+        return '<li><div class="meta">'+when+' · '+(MODES[g.mode] ? MODES[g.mode].name : g.mode)+'</div>'
+          + '🏆 <span class="winner">'+(winner ? escapeHtml(winner.name) : "?")+'</span>'
+          + (others ? ' <span class="meta">contre '+others+'</span>' : '')
+          + '</li>';
+      }).join("") + '</ul>';
+    }
+  }
+
+  function openStats(){
+    statsReturnScreen = document.querySelector(".screen.active").id;
+    renderStatsFilter();
+    renderStats();
+    showScreen("screen-stats");
+  }
+
+  document.querySelectorAll(".stats-open-btn").forEach(function(b){ b.addEventListener("click", openStats); });
+  document.getElementById("stats-back-btn").addEventListener("click", function(){
+    if(statsReturnScreen === "screen-setup") renderKnownPlayers();
+    showScreen(statsReturnScreen);
+  });
+  document.getElementById("stats-reset-btn").addEventListener("click", function(){
+    if(confirm("Effacer toutes les statistiques et la liste des joueurs enregistrés ?")){
+      store = { players:{}, games:[] };
+      saveStore();
+      renderStats();
+    }
   });
 
   // ---------- SCREEN / CURTAIN HELPERS ----------
