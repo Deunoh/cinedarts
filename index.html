@@ -211,14 +211,15 @@
 
   .last-throws{ display:flex; gap:.25rem; margin-top:.35rem; flex-wrap:wrap; }
   .mini-dart{
-    font-size:.68rem; color:var(--ink-dim); background:var(--bg-panel-strong); border:1px solid var(--border);
-    border-radius:5px; padding:.05rem .3rem;
+    font-size:1rem; color:var(--ink); background:var(--bg-panel-strong); border:1px solid var(--border);
+    border-radius:6px; padding:.1rem .45rem;
   }
 
-  .turn-strip{ display:flex; align-items:center; justify-content:center; gap:.6rem; margin-bottom:.5rem; flex:none; }
+  .turn-row{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:1.2rem; margin-bottom:.6rem; flex:none; }
+  .turn-strip{ display:flex; align-items:center; justify-content:center; gap:.6rem; }
   .dart-slot{
-    width:3.4rem; height:2rem; border-radius:8px; border:1px dashed var(--border);
-    display:flex; align-items:center; justify-content:center; font-size:.85rem; color:var(--ink-dim);
+    width:6.5rem; height:3.6rem; border-radius:10px; border:1px dashed var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:1.7rem; font-weight:bold; color:var(--ink-dim);
     background:var(--bg-panel);
   }
   .dart-slot.filled{ border-style:solid; color:var(--gold-light); border-color:var(--gold); background:rgba(212,175,55,0.1); }
@@ -228,15 +229,28 @@
     flex:1; min-height:0; display:flex; flex-direction:column;
   }
   .kbd-legend{
-    text-align:center; font-size:.72rem; color:var(--ink-dim); margin-bottom:.5rem; flex:none; letter-spacing:.02em;
+    display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:.5rem .7rem;
+    font-size:1rem; color:var(--ink); margin-bottom:.6rem; flex:none; letter-spacing:.02em;
+  }
+  #kbd-mult-hint{ display:contents; }
+  .kbd-item{
+    display:inline-flex; align-items:center; gap:.3rem; white-space:nowrap;
+    padding:.2rem .65rem; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.03);
   }
   .kbd-legend kbd{
     display:inline-block; background:var(--bg-panel-strong); border:1px solid var(--border); border-radius:5px;
-    padding:0 .35rem; font-family:'Segoe UI', Arial, sans-serif; font-size:.7rem; color:var(--gold-light);
+    padding:.05rem .5rem; font-family:'Segoe UI', Arial, sans-serif; font-size:1rem; color:var(--gold-light);
   }
-  .kbd-buffer-badge{
-    margin-left:.5rem; font-weight:bold; color:var(--gold-light); font-family:'Segoe UI', Arial, sans-serif; min-width:1.4rem; display:inline-block;
+  .kbd-screen{
+    min-width:9.5rem; height:3.6rem; padding:.2rem .9rem; border-radius:10px;
+    background:#07090a; border:2px solid #2a2f33; box-shadow:inset 0 0 14px rgba(0,0,0,.9), 0 0 0 1px rgba(212,175,55,0.15);
+    display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+    font-family:'Courier New', ui-monospace, monospace;
   }
+  .kbd-screen-mult{ font-size:.75rem; letter-spacing:.15em; text-transform:uppercase; color:rgba(255,215,90,0.4); line-height:1; }
+  .kbd-screen-mult.on{ color:#ffd75a; text-shadow:0 0 6px rgba(255,215,90,.7); }
+  .kbd-screen-val{ font-size:2.1rem; font-weight:bold; line-height:1.05; color:#ffd75a; text-shadow:0 0 8px rgba(255,215,90,.75); min-height:1.05em; }
+  .kbd-screen-val:empty::before{ content:"_"; color:rgba(255,215,90,0.25); text-shadow:none; }
   .mult-row{ display:flex; justify-content:center; gap:.6rem; margin-bottom:.5rem; flex:none; }
   .mult-btn{
     padding:.4rem 1.2rem; border-radius:10px; border:1px solid var(--border); background:var(--bg-panel-strong); color:var(--ink); font-size:1rem;
@@ -253,6 +267,8 @@
   .num-btn:hover{ background:rgba(212,175,55,0.18); border-color:var(--gold); }
   .num-btn:active{ transform:scale(.94); }
   .num-btn.kbd-active{ background:rgba(212,175,55,0.3); border-color:var(--gold); box-shadow:0 0 0 2px var(--gold); }
+  .num-btn.kbd-flash{ animation:kbdflash .45s ease-out; }
+  @keyframes kbdflash{ from{ background:rgba(212,175,55,0.55); border-color:var(--gold); box-shadow:0 0 0 3px var(--gold); } to{} }
   .bull-row{ display:flex; justify-content:center; gap:.6rem; margin-top:.5rem; width:min(100%,620px); margin-left:auto; margin-right:auto; flex:none; }
   .bull-row .num-btn{ flex:1; padding:.5rem; font-size:clamp(.75rem, 1.8vh, .95rem); min-height:2.2rem; }
   .action-row{ display:flex; justify-content:center; gap:.7rem; margin-top:1rem; }
@@ -378,12 +394,21 @@
     <div class="scoreboard" id="scoreboard"></div>
 
     <div class="msg-banner" id="msg-banner">&nbsp;</div>
-    <div class="turn-strip" id="turn-strip"></div>
+    <div class="turn-row">
+      <div class="turn-strip" id="turn-strip"></div>
+      <div class="kbd-screen" id="kbd-screen">
+        <span class="kbd-screen-mult" id="kbd-screen-mult">Simple</span>
+        <span class="kbd-screen-val" id="kbd-screen-val"></span>
+      </div>
+    </div>
 
     <div class="entry-panel">
       <div class="kbd-legend" id="kbd-legend">
-        ⌨ <kbd>0</kbd>-<kbd>20</kbd> puis <kbd>Entrée</kbd> · <span id="kbd-mult-hint"><kbd>S</kbd> Simple · <kbd>D</kbd> Double · <kbd>T</kbd> Triple · </span><kbd>M</kbd> Manqué · <kbd>⌫</kbd> Effacer / Annuler le dernier lancer
-        <span class="kbd-buffer-badge" id="kbd-buffer-display"></span>
+        <span class="kbd-item"><kbd>0</kbd>-<kbd>20</kbd> puis <kbd>Entrée</kbd></span>
+        <span id="kbd-mult-hint"><span class="kbd-item"><kbd>+</kbd> Double</span><span class="kbd-item"><kbd>*</kbd> Triple</span></span>
+        <span class="kbd-item"><kbd>/</kbd> Bull 25</span>
+        <span class="kbd-item"><kbd>+</kbd> <kbd>/</kbd> Bull 50</span>
+        <span class="kbd-item"><kbd>-</kbd> Manqué</span>
       </div>
       <div class="mult-row" id="mult-row"></div>
       <div class="num-grid" id="num-grid"></div>
@@ -448,9 +473,12 @@
   var KEYBOARD_HELP_HTML = "<h3 style='margin-bottom:.4rem;'>Contrôles clavier</h3>"
     + "<p>Tape le numéro touché (<b>0</b> à <b>20</b>, ou <b>25</b> pour un Bull) au clavier ou au pavé numérique, puis valide avec <b>Entrée</b>.</p>"
     + "<ul style='padding-left:1.1rem; margin:0 0 .6rem;'>"
-    + "<li><b>S</b> = Simple, <b>D</b> = Double, <b>T</b> = Triple — choisis le multiplicateur avant ou après avoir tapé le numéro</li>"
-    + "<li><b>M</b> = Manqué (validé immédiatement, pas besoin d'Entrée)</li>"
-    + "<li><b>⌫ Retour arrière</b> efface le dernier chiffre tapé — ou, si rien n'est tapé, annule le dernier lancer (comme le bouton \"Annuler\")</li>"
+    + "<li><b>+</b> = Double, <b>*</b> = Triple (pavé numérique) — choisis le multiplicateur avant ou après avoir tapé le numéro. Réappuyer sur le même multiplicateur revient à Simple</li>"
+    + "<li><b>/</b> = Bull 25, <b>+</b> puis <b>/</b> = Bull 50 (validé immédiatement)</li>"
+    + "<li><b>-</b> = Manqué (validé immédiatement, pas besoin d'Entrée)</li>"
+    + "<li><b>⌫ Retour arrière</b> efface pas à pas : d'abord les chiffres tapés, puis le Double/Triple (retour au Simple), puis annule le dernier lancer (comme le bouton \"Annuler\")</li>"
+    + "<li>Exemples : <b>* 3 Entrée</b> = Triple 3 · <b>+ /</b> = Bull (50) · <b>/</b> = Bull ext. (25)</li>"
+    + "<li>Les raccourcis <b>S</b> / <b>D</b> / <b>T</b> / <b>M</b> du clavier principal fonctionnent toujours</li>"
     + "<li><b>Échap</b> efface tout ce qui a été tapé</li>"
     + "</ul>";
 
@@ -897,6 +925,7 @@
         var b = document.createElement("button");
         b.type = "button";
         b.className = "num-btn";
+        b.id = "num-btn-" + n;
         b.textContent = n;
         b.addEventListener("click", function(){ recordThrow(state.selectedMult, n, labelFor(state.selectedMult,n)); });
         numGrid.appendChild(b);
@@ -906,13 +935,13 @@
     var bullRow = document.getElementById("bull-row");
     bullRow.innerHTML = "";
     var bOuter = document.createElement("button");
-    bOuter.type="button"; bOuter.className="num-btn"; bOuter.textContent="Bull ext. (25)";
+    bOuter.type="button"; bOuter.id="bull25-btn"; bOuter.className="num-btn"; bOuter.textContent="Bull ext. (25)";
     bOuter.addEventListener("click", function(){ recordThrow(1,25,"Bull25"); });
     var bInner = document.createElement("button");
-    bInner.type="button"; bInner.className="num-btn"; bInner.textContent="Bull (50)";
+    bInner.type="button"; bInner.id="bull50-btn"; bInner.className="num-btn"; bInner.textContent="Bull (50)";
     bInner.addEventListener("click", function(){ recordThrow(2,25,"Bull50"); });
     var miss = document.createElement("button");
-    miss.type="button"; miss.className="num-btn"; miss.textContent="Manqué";
+    miss.type="button"; miss.id="miss-btn"; miss.className="num-btn"; miss.textContent="Manqué";
     miss.addEventListener("click", function(){ recordThrow(1,0,"—"); });
     bullRow.appendChild(bOuter);
     bullRow.appendChild(bInner);
@@ -921,9 +950,16 @@
     highlightKeyboardBuffer();
   }
 
+  // Petit écran : affiche le multiplicateur choisi et le numéro en cours de saisie
   function renderKbdBuffer(){
-    var el = document.getElementById("kbd-buffer-display");
-    if(el) el.textContent = kbdBuffer;
+    var val = document.getElementById("kbd-screen-val");
+    var mult = document.getElementById("kbd-screen-mult");
+    if(val) val.textContent = kbdBuffer;
+    if(mult){
+      var m = state ? state.selectedMult : 1;
+      mult.textContent = m === 3 ? "Triple" : m === 2 ? "Double" : "Simple";
+      mult.classList.toggle("on", m > 1);
+    }
   }
 
   function highlightKeyboardBuffer(){
@@ -931,6 +967,19 @@
     document.querySelectorAll("#num-grid .num-btn").forEach(function(b){
       b.classList.toggle("kbd-active", kbdBuffer !== "" && b.textContent === kbdBuffer);
     });
+    var bullTyped = kbdBuffer === "25";
+    var b25 = document.getElementById("bull25-btn"), b50 = document.getElementById("bull50-btn");
+    if(b25) b25.classList.toggle("kbd-active", bullTyped && state.selectedMult === 1);
+    if(b50) b50.classList.toggle("kbd-active", bullTyped && state.selectedMult > 1);
+  }
+
+  // Petit flash sur le bouton correspondant à un lancer saisi au clavier
+  function flashButton(id){
+    var b = document.getElementById(id);
+    if(!b) return;
+    b.classList.remove("kbd-flash");
+    void b.offsetWidth;
+    b.classList.add("kbd-flash");
   }
 
   function appendKbdDigit(d){
@@ -947,12 +996,28 @@
     if(value === 25){
       var m = state.selectedMult === 3 ? 2 : state.selectedMult;
       recordThrow(m, 25, m === 2 ? "Bull50" : "Bull25");
+      flashButton(m === 2 ? "bull50-btn" : "bull25-btn");
     } else if(value >= 1 && value <= 20){
       recordThrow(state.selectedMult, value, labelFor(state.selectedMult, value));
+      flashButton("num-btn-" + value);
     } else if(value === 0){
       recordThrow(1, 0, "—");
+      flashButton("miss-btn");
     }
     highlightKeyboardBuffer();
+  }
+
+  // Retour arrière par étapes : chiffres tapés, puis multiplicateur, puis dernier lancer
+  function eraseStep(){
+    if(kbdBuffer !== ""){
+      kbdBuffer = kbdBuffer.slice(0, -1);
+      highlightKeyboardBuffer();
+    } else if(state.selectedMult !== 1){
+      state.selectedMult = 1;
+      renderNumGrid();
+    } else {
+      undo();
+    }
   }
 
   document.addEventListener("keydown", function(e){
@@ -960,6 +1025,38 @@
     if(!state || state.finished) return;
     if(!document.getElementById("screen-game").classList.contains("active")) return;
     if(document.getElementById("rules-modal").classList.contains("active")) return;
+
+    // Pavé numérique : on se base sur e.code pour que ça marche même Verr Num désactivé
+    var code = e.code || "";
+    if(/^Numpad[0-9]$/.test(code)){
+      e.preventDefault();
+      appendKbdDigit(code.slice(-1));
+      return;
+    }
+    if(code === "NumpadDivide"){
+      // Bull direct : "/" = 25, "+ /" (ou "* /") = 50
+      e.preventDefault();
+      kbdBuffer = "";
+      if(state.selectedMult > 1){ recordThrow(2, 25, "Bull50"); flashButton("bull50-btn"); }
+      else { recordThrow(1, 25, "Bull25"); flashButton("bull25-btn"); }
+      highlightKeyboardBuffer();
+      return;
+    }
+    var numpadMult = { NumpadAdd:2, NumpadMultiply:3 }[code];
+    if(numpadMult){
+      e.preventDefault();
+      // Appuyer deux fois sur le même multiplicateur revient à Simple
+      state.selectedMult = (state.selectedMult === numpadMult) ? 1 : numpadMult;
+      renderNumGrid();
+      return;
+    }
+    if(code === "NumpadSubtract"){
+      e.preventDefault();
+      kbdBuffer = "";
+      recordThrow(1, 0, "—");
+      flashButton("miss-btn");
+      return;
+    }
 
     var key = e.key;
     if(key >= "0" && key <= "9"){
@@ -970,12 +1067,7 @@
       confirmKeyboardThrow();
     } else if(key === "Backspace"){
       e.preventDefault();
-      if(kbdBuffer === ""){
-        undo();
-      } else {
-        kbdBuffer = kbdBuffer.slice(0, -1);
-        highlightKeyboardBuffer();
-      }
+      eraseStep();
     } else if(key === "Escape"){
       kbdBuffer = "";
       highlightKeyboardBuffer();
