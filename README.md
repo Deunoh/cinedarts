@@ -32,10 +32,16 @@ Un bouton **⛶** est disponible en jeu, à côté de "Annuler" : il bascule l'a
 
 ## Contrôles clavier en jeu
 
+Tout se joue au **pavé numérique** (fonctionne même Verr Num désactivé) :
+
 - **0-20** (ou **25** pour un Bull) puis **Entrée** pour valider un lancer.
-- **S** / **D** / **T** pour choisir Simple / Double / Triple.
-- **M** pour "Manqué" (validé immédiatement).
-- **⌫** efface le dernier chiffre tapé, ou annule le dernier lancer si rien n'est saisi.
+- **+** Double · **\*** Triple (réappuyer sur le même multiplicateur revient à Simple).
+- **/** Bull 25 · **+** puis **/** Bull 50 (validé immédiatement).
+- **-** pour "Manqué" (validé immédiatement).
+- **⌫** (retour arrière) efface pas à pas : d'abord les chiffres tapés, puis le Double/Triple (retour au Simple), puis annule le dernier lancer.
+- Exemples : `* 3 Entrée` = Triple 3, `+ /` = Bull 50.
+
+Les raccourcis du clavier principal restent disponibles : **S** / **D** / **T** (multiplicateur), **M** (manqué).
 - **Échap** efface la saisie en cours.
 
 ## Autres fonctionnalités
